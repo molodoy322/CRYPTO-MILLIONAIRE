@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import QuizGame from './components/QuizGame';
 import { ethers } from 'ethers';
 import { sdk } from '@farcaster/miniapp-sdk';
@@ -30,7 +30,7 @@ const App = () => {
   return (
     <div className="App">
       <div style={{ maxWidth: 448, margin: '0 auto', padding: '1.5rem 1rem' }}>
-        <QuizGame walletAddress={walletAddress} connectWallet={connectWallet} />
+        <QuizGame walletAddress={walletAddress} />
       </div>
     </div>
   );
