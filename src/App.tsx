@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QuizGame from './components/QuizGame';
 import { ethers } from 'ethers';
+import { sdk } from '@farcaster/miniapp-sdk';
 
 declare global {
   interface Window {
@@ -21,6 +22,10 @@ const App = () => {
       // Ошибки теперь обрабатываются внутри QuizGame
     }
   };
+
+  useEffect(() => {
+    sdk.actions.ready();
+  }, []);
 
   return (
     <div className="App">
