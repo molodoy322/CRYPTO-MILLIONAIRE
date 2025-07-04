@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { easyQuestions, mediumQuestions, hardQuestions } from '../data/questions.ts';
-import { ethers } from 'ethers';
-import { getContract } from '../contract';
+// import { ethers } from 'ethers';
+// import { getContract } from '../contract';
 
 declare global {
   interface Window {
