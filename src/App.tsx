@@ -12,17 +12,6 @@ declare global {
 const App = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
-  const connectWallet = async () => {
-    try {
-      if (!window.ethereum) throw new Error('No wallet found. Please install MetaMask or another wallet.');
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
-      setWalletAddress(accounts[0]);
-    } catch (e: any) {
-      // Ошибки теперь обрабатываются внутри QuizGame
-    }
-  };
-
   useEffect(() => {
     sdk.actions.ready();
   }, []);
