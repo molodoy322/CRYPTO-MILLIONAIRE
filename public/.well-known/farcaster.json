@@ -1,0 +1,15 @@
+{
+  "name": "Crypto Millionaire Quiz",
+  "description": "Test your crypto knowledge and become a millionaire!",
+  "image": "https://your-domain.vercel.app/og-image.png",
+  "external_url": "https://your-domain.vercel.app",
+  "frame_url": "https://your-domain.vercel.app",
+  "frame_image": "https://your-domain.vercel.app/og-image.png",
+  "frame_post_url": "https://your-domain.vercel.app/api/frame",
+  "frame_buttons": [
+    {
+      "label": "Start Quiz",
+      "action": "post"
+    }
+  ]
+} 
