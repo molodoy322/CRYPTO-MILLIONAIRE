@@ -1,18 +1,13 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import { useAccount, useWriteContract } from 'wagmi';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '../contract';
+import { base } from 'wagmi/chains';
 import { easyQuestions, mediumQuestions, hardQuestions } from '../data/questions.ts';
-import { ethers } from 'ethers';
-import { getContract } from '../contract';
-// import { ethers } from 'ethers';
-// import { getContract } from '../contract';
 
 declare global {
   interface Window {
     ethereum?: any;
   }
-}
-
-interface QuizGameProps {
-  walletAddress: string | null;
 }
 
 type GameState = 'select' | 'start' | 'playing' | 'won' | 'lost';
@@ -30,7 +25,9 @@ const DIFFICULTY_DESCRIPTIONS: Record<Difficulty, string> = {
   hard: 'Advanced trading, protocols, Farcaster ecosystem, and Web3 tech.',
 };
 
-const QuizGame: React.FC<QuizGameProps> = ({ walletAddress }) => {
+const DIFFICULTY_ENUM = { easy: 0, medium: 1, hard: 2 } as const;
+
+const QuizGame: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>('select');
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -39,6 +36,8 @@ const QuizGame: React.FC<QuizGameProps> = ({ walletAddress }) => {
   const [isCorrect, setIsCorrect] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [txStatus, setTxStatus] = useState<string | null>(null);
+  const { isConnected } = useAccount();
+  const { writeContractAsync } = useWriteContract();
 
   const questions = useMemo(() => {
     if (difficulty === 'easy') return easyQuestions;
@@ -76,41 +75,53 @@ const QuizGame: React.FC<QuizGameProps> = ({ walletAddress }) => {
     setShowResult(true);
 
     if (correct) {
+      if (!isConnected) {
+        setTxStatus('Кошелёк Farcaster не найден!');
+        setIsAnimating(false);
+        return;
+      }
+      setTxStatus('Отправка транзакции...');
       try {
-        setTxStatus('Отправка транзакции...');
-        if (window.ethereum && walletAddress) {
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const signer = await provider.getSigner();
-          const contract = getContract(signer);
-          // Укажи нужную сумму value, если требуется (например, 0.01 ETH)
-          const tx = await contract.payForAnswer(difficulty, { value: ethers.parseEther('0.01') });
-          setTxStatus('Ожидание подтверждения...');
-          await tx.wait();
-          setTxStatus('Транзакция подтверждена!');
-        } else {
-          setTxStatus('Кошелёк не подключён!');
-        }
+        await writeContractAsync({
+          address: CONTRACT_ADDRESS,
+          abi: CONTRACT_ABI,
+          functionName: 'payForAnswer',
+          args: [DIFFICULTY_ENUM[difficulty]],
+          chainId: base.id,
+          value: BigInt(20000000000000),
+        });
+        setTxStatus('Транзакция подтверждена!');
+        setTimeout(() => {
+          if (currentQuestionIndex === questions.length - 1) {
+            setGameState('won');
+          } else {
+            setCurrentQuestionIndex(prev => prev + 1);
+            setSelectedAnswer(null);
+            setShowResult(false);
+          }
+          setIsAnimating(false);
+          setTxStatus(null);
+        }, 1000);
       } catch (e: any) {
-        setTxStatus('Ошибка транзакции: ' + (e?.message || e));
-      }
-    }
-
-    setTimeout(() => {
-      if (correct) {
-        if (currentQuestionIndex === questions.length - 1) {
-          setGameState('won');
+        let message = e?.message || e;
+        if (message?.toLowerCase().includes('user rejected')) {
+          setTxStatus('Transaction cancelled by user.');
+        } else if (message?.toLowerCase().includes('insufficient funds') || message?.toLowerCase().includes('not enough gas')) {
+          setTxStatus('Not enough funds or gas to complete the transaction.');
         } else {
-          setCurrentQuestionIndex(prev => prev + 1);
-          setSelectedAnswer(null);
-          setShowResult(false);
+          setTxStatus('Transaction error: ' + message);
         }
-      } else {
-        setGameState('lost');
+        setIsAnimating(false);
+        return;
       }
-      setIsAnimating(false);
-      setTxStatus(null);
-    }, 1500);
-  }, [selectedAnswer, isAnimating, currentQuestion.correctAnswer, currentQuestionIndex, questions.length, difficulty, walletAddress]);
+    } else {
+      setTimeout(() => {
+        setGameState('lost');
+        setIsAnimating(false);
+        setTxStatus(null);
+      }, 1000);
+    }
+  }, [selectedAnswer, isAnimating, currentQuestion.correctAnswer, currentQuestionIndex, questions.length, difficulty, isConnected, writeContractAsync]);
 
   const handleRestart = useCallback(() => {
     setIsAnimating(true);

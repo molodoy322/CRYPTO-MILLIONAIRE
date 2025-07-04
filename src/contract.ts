@@ -1,5 +1,3 @@
-import { ethers } from "ethers";
-
 export const CONTRACT_ADDRESS = "0x4EF47c37bBd2F80B7bC0261C51a1BF9E66Bf54E6";
 
 export const CONTRACT_ABI = [
@@ -763,8 +761,4 @@ export const CONTRACT_ABI = [
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
-
-export function getContract(signerOrProvider: ethers.Signer | ethers.Provider) {
-  return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signerOrProvider);
-} 
+]; 
