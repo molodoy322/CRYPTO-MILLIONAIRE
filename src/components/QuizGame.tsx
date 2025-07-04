@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { easyQuestions, mediumQuestions, hardQuestions } from '../data/questions.ts';
+import { ethers } from 'ethers';
+import { getContract } from '../contract';
 // import { ethers } from 'ethers';
 // import { getContract } from '../contract';
 
@@ -11,7 +13,6 @@ declare global {
 
 interface QuizGameProps {
   walletAddress: string | null;
-  connectWallet: () => Promise<void>;
 }
 
 type GameState = 'select' | 'start' | 'playing' | 'won' | 'lost';
@@ -29,7 +30,7 @@ const DIFFICULTY_DESCRIPTIONS: Record<Difficulty, string> = {
   hard: 'Advanced trading, protocols, Farcaster ecosystem, and Web3 tech.',
 };
 
-const QuizGame: React.FC<QuizGameProps> = () => {
+const QuizGame: React.FC<QuizGameProps> = ({ walletAddress }) => {
   const [gameState, setGameState] = useState<GameState>('select');
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -37,6 +38,7 @@ const QuizGame: React.FC<QuizGameProps> = () => {
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [txStatus, setTxStatus] = useState<string | null>(null);
 
   const questions = useMemo(() => {
     if (difficulty === 'easy') return easyQuestions;
@@ -65,14 +67,33 @@ const QuizGame: React.FC<QuizGameProps> = () => {
     }, 200);
   }, []);
 
-  const handleAnswerSelect = useCallback((answerIndex: number) => {
+  const handleAnswerSelect = useCallback(async (answerIndex: number) => {
     if (selectedAnswer !== null || isAnimating) return;
-    
     setIsAnimating(true);
     setSelectedAnswer(answerIndex);
     const correct = answerIndex === currentQuestion.correctAnswer;
     setIsCorrect(correct);
     setShowResult(true);
+
+    if (correct) {
+      try {
+        setTxStatus('Отправка транзакции...');
+        if (window.ethereum && walletAddress) {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const signer = await provider.getSigner();
+          const contract = getContract(signer);
+          // Укажи нужную сумму value, если требуется (например, 0.01 ETH)
+          const tx = await contract.payForAnswer(difficulty, { value: ethers.parseEther('0.01') });
+          setTxStatus('Ожидание подтверждения...');
+          await tx.wait();
+          setTxStatus('Транзакция подтверждена!');
+        } else {
+          setTxStatus('Кошелёк не подключён!');
+        }
+      } catch (e: any) {
+        setTxStatus('Ошибка транзакции: ' + (e?.message || e));
+      }
+    }
 
     setTimeout(() => {
       if (correct) {
@@ -87,8 +108,9 @@ const QuizGame: React.FC<QuizGameProps> = () => {
         setGameState('lost');
       }
       setIsAnimating(false);
+      setTxStatus(null);
     }, 1500);
-  }, [selectedAnswer, isAnimating, currentQuestion.correctAnswer, currentQuestionIndex, questions.length]);
+  }, [selectedAnswer, isAnimating, currentQuestion.correctAnswer, currentQuestionIndex, questions.length, difficulty, walletAddress]);
 
   const handleRestart = useCallback(() => {
     setIsAnimating(true);
@@ -231,6 +253,8 @@ const QuizGame: React.FC<QuizGameProps> = () => {
             </div>
           </div>
         )}
+
+        {txStatus && <div className="result-message">{txStatus}</div>}
       </div>
     </div>
   );
