@@ -1,5 +1,18 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { easyQuestions, mediumQuestions, hardQuestions, Question } from '../data/questions.ts';
+import { easyQuestions, mediumQuestions, hardQuestions } from '../data/questions.ts';
+import { ethers } from 'ethers';
+import { getContract } from '../contract';
+
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
+interface QuizGameProps {
+  walletAddress: string | null;
+  connectWallet: () => Promise<void>;
+}
 
 type GameState = 'select' | 'start' | 'playing' | 'won' | 'lost';
 type Difficulty = 'easy' | 'medium' | 'hard';
@@ -16,7 +29,7 @@ const DIFFICULTY_DESCRIPTIONS: Record<Difficulty, string> = {
   hard: 'Advanced trading, protocols, Farcaster ecosystem, and Web3 tech.',
 };
 
-const QuizGame: React.FC = () => {
+const QuizGame: React.FC<QuizGameProps> = ({ walletAddress, connectWallet }) => {
   const [gameState, setGameState] = useState<GameState>('select');
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
