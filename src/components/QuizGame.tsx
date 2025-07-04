@@ -29,7 +29,7 @@ const DIFFICULTY_DESCRIPTIONS: Record<Difficulty, string> = {
   hard: 'Advanced trading, protocols, Farcaster ecosystem, and Web3 tech.',
 };
 
-const QuizGame: React.FC<QuizGameProps> = ({ walletAddress, connectWallet }) => {
+const QuizGame: React.FC<QuizGameProps> = () => {
   const [gameState, setGameState] = useState<GameState>('select');
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
